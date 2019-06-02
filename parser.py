@@ -4,24 +4,25 @@ import json
 import dateutil.parser
 import datetime as dt
 import pytz
+import config
 
 
-def create_link():
-    """Создаем ссылку на яндекс.расписания из пользовательского ввода"""
-    from_name = input('Откуда: ')
-    to_name = input('Куда: ')
-    when = 'сегодня'
-    data = (from_name, to_name, when)
-    link = 'https://rasp.yandex.ru/search/suburban/?fromName={}&toName={}\
-    &when={}'.format(*data)
+def create_link(data):
+    """Создаем ссылку на сайт с расписаниями из пользовательского ввода"""
+    # from_name = input('Откуда: ')
+    # to_name = input('Куда: ')
+    # when = 'сегодня'
+    # data = (from_name, to_name, when)
+    link = config.LINK.format(*data)
     return link
 
 
 def parse_main_json(link):
-    """Получаем с сайта яндекс.расписаний json, обрабатываем его
+    """Получаем с сайта с расписаниями json, обрабатываем его
     и возвращаем список словарей с данными о сегодняшних рейсах"""
     p = requests.get(link)
     soup = bs(p.text, "html.parser")
+    print(soup)
     data = soup.find_all('script')[3]  # парсим нужный тег
     data = str(data).split('window.INITIAL_STATE = ')[1]  # отрезаем 1 часть
     data = data.split(';\n')
@@ -55,9 +56,10 @@ def get_data(train):
     return data
 
 
-def print_info_about_train(trains):
+def info_about_trains(trains):
     """Распечатывает блок с информацией о рейсе"""
     current_time = pytz.utc.localize(dt.datetime.utcnow())
+    res = []
     timez = pytz.timezone('Europe/Moscow')
     for train in trains:
         delta = train['departure'] - current_time
@@ -69,7 +71,7 @@ def print_info_about_train(trains):
                 departure_in = '{} часов {}'.format(
                     departure_in // 60,
                     departure_in % 60)
-            print('========\n{}\nОтправление {}\nПрибытие {}\nЧерез {}\
+            res.append('========\n{}\nОтправление {}\nПрибытие {}\nЧерез {}\
  минут\nОстановки - {}\nЦена билета {} руб'.format(
                 train['route'],
                 departure,
@@ -77,19 +79,19 @@ def print_info_about_train(trains):
                 departure_in,
                 train['stops'],
                 train['price']))
+    return res
 
 
-def test_main():
+def test_main(user_input):
     trains = []
-    link = create_link()
+    res = []
+    link = create_link(user_input)
     try:
         data_list = parse_main_json(link)
     except IndexError:
-        print('Введите корректное название станций.')
+        return ['Введите корректное название станций.']
         exit()
     for train in data_list:
         trains.append(get_data(train))
-    print_info_about_train(trains)
-
-
-test_main()
+    res = [*info_about_trains(trains)][:3]
+    return res
