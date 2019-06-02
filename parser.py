@@ -22,7 +22,6 @@ def parse_main_json(link):
     и возвращаем список словарей с данными о сегодняшних рейсах"""
     p = requests.get(link)
     soup = bs(p.text, "html.parser")
-    print(soup)
     data = soup.find_all('script')[3]  # парсим нужный тег
     data = str(data).split('window.INITIAL_STATE = ')[1]  # отрезаем 1 часть
     data = data.split(';\n')

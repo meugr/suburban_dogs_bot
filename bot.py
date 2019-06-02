@@ -64,7 +64,6 @@ def return_result(message):
     little_db.append_info(message.chat.id, message.text)
     print(little_db.get_info(message.chat.id))
     trains = parser.test_main(little_db.get_info(message.chat.id))
-    print(trains)
     for train in trains:
         bot.send_message(message.chat.id, train)
     little_db.reset_info(message.chat.id)
