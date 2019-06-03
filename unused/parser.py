@@ -9,10 +9,6 @@ import config
 
 def create_link(data):
     """Создаем ссылку на сайт с расписаниями из пользовательского ввода"""
-    # from_name = input('Откуда: ')
-    # to_name = input('Куда: ')
-    # when = 'сегодня'
-    # data = (from_name, to_name, when)
     link = config.LINK.format(*data)
     return link
 

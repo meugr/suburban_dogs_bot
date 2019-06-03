@@ -4,7 +4,7 @@ import config
 import parser
 import little_db
 
-bot = telebot.TeleBot(config.TOKEN)
+bot = telebot.TeleBot(config.TG_TOKEN)
 remove_markup = types.ReplyKeyboardRemove()
 markup = types.ReplyKeyboardMarkup()
 markup.row('Сегодня', 'Завтра')
