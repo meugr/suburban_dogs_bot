@@ -1,18 +1,23 @@
 import telebot
 from telebot import types
+
+from little_db import UserState
+from little_db import StationInfo
+from ya_api import YaAPI
+
 import config
-import parser
-import little_db
+
+r = UserState()
+s = StationInfo(config.DB_PATH)
 
 bot = telebot.TeleBot(config.TG_TOKEN)
-remove_markup = types.ReplyKeyboardRemove()
+remove_markup = types.ReplyKeyboardRemove()  # настройка кастомной клавиатуры
 markup = types.ReplyKeyboardMarkup()
 markup.row('Сегодня', 'Завтра')
 
 
 @bot.message_handler(commands=['start'])
 def start_message(message):
-    little_db.create_new_user(message.chat.id)
     bot.send_message(message.chat.id, 'Добро пожаловать.')
 
 
@@ -24,54 +29,60 @@ def help_message(message):
 
 @bot.message_handler(commands=['cancel'])
 def cancel_search(message):
-    print(little_db.get_info(message.chat.id))
-    little_db.reset_info(message.chat.id)
+    print(r.get_info(message.chat.id))
+    r.reset_info(message.chat.id)
     bot.send_message(message.chat.id, 'Вы отменили выбор станции.',
                      reply_markup=remove_markup)
 
 
-@bot.message_handler(commands=['cmd'],
-                     func=lambda message: little_db.get_info(
-                     message.chat.id) == [None])
+@bot.message_handler(commands=['search'],
+                     func=lambda message: r.get_info(
+                     message.chat.id) == {})
 def get_departure(message):
-    little_db.set_empty_info(message.chat.id)
+    r.start_search(message.chat.id)
     bot.send_message(message.chat.id, 'Введите станцию отправления')
-    print(little_db.get_info(message.chat.id))
 
 
+# старт FSM
 @bot.message_handler(func=lambda message:
-                     len(little_db.get_info(message.chat.id)) == 0)
+                     len(r.get_info(message.chat.id)) == 1)
 def get_arrival(message):
-    little_db.append_info(message.chat.id, message.text)
+    r.append_info(message.chat.id, 'departure', message.text)
     bot.send_message(message.chat.id, 'Введите станцию прибытия')
-    print(little_db.get_info(message.chat.id))
+    print(r.get_info(message.chat.id))
 
 
 @bot.message_handler(func=lambda message:
-                     (len(little_db.get_info(message.chat.id)) == 1) and
-                     (little_db.get_info(message.chat.id) != [None]))
+                     len(r.get_info(message.chat.id)) == 2)
 def get_date(message):
-    little_db.append_info(message.chat.id, message.text)
+    r.append_info(message.chat.id, 'arrival', message.text)
     bot.send_message(message.chat.id, 'Выберете дату', reply_markup=markup)
-    print(little_db.get_info(message.chat.id))
+    print(r.get_info(message.chat.id))
 
 
 @bot.message_handler(func=lambda message:
-                     len(little_db.get_info(message.chat.id)) == 2)
+                     len(r.get_info(message.chat.id)) == 3)
 def return_result(message):
     bot.send_message(
         message.chat.id, 'Загружаю расписание...', reply_markup=remove_markup)
-    little_db.append_info(message.chat.id, message.text)
-    print(little_db.get_info(message.chat.id))
-    trains = parser.test_main(little_db.get_info(message.chat.id))
-    for train in trains:
-        bot.send_message(message.chat.id, train)
-    little_db.reset_info(message.chat.id)
+    r.append_info(message.chat.id, 'date', message.text)
+
+    data = r.get_info(message.chat.id)
+    print(data)
+    d, a = tuple(s.get_info_with_db(data))  # отправление и прибытие с регионом
+    print(d, a, sep='\n\n')
+    if len(d) > 1:
+        print('search_engine d!')  # кастом клава, если станций несколько
+    if len(a) > 1:
+        print('search_engine a!')
+
+    YaAPI.send_request((d[0][0], a[0][0]))
 
 
 
 
 
+    r.reset_info(message.chat.id)  # Сброс состояния
 
 
 if __name__ == '__main__':
