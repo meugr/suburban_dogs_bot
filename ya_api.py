@@ -10,5 +10,4 @@ class YaAPI:
         info = [data[0], data[1]]
         url = config.LINK.format(*info, config.YA_TOKEN)
         ya_response = requests.get(url)
-        #print(ya_response.text)
-        print(url)
+        return ya_response.json()

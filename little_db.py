@@ -13,6 +13,7 @@ class UserState():
 
     def start_search(self, chat_id):
         '''Создает в redis запись, тем самым начиная опрос юзера'''
+        self.conn.delete(chat_id)
         self.conn.hmset(chat_id, {'search': 'True'})
 
     def reset_info(self, chat_id):

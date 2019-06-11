@@ -1,9 +1,14 @@
 import telebot
 from telebot import types
 
+import pytz
+# import datetime as dt
+import dateutil.parser
+
 from little_db import UserState
 from little_db import StationInfo
 from ya_api import YaAPI
+import parser
 
 import config
 
@@ -69,14 +74,42 @@ def return_result(message):
 
     data = r.get_info(message.chat.id)
     print(data)
-    d, a = tuple(s.get_info_with_db(data))  # отправление и прибытие с регионом
+    d, a = s.get_info_with_db(data)  # отправление и прибытие с регионом
     print(d, a, sep='\n\n')
     if len(d) > 1:
         print('search_engine d!')  # кастом клава, если станций несколько
     if len(a) > 1:
         print('search_engine a!')
 
-    YaAPI.send_request((d[0][0], a[0][0]))
+# Временная мера, написать обработчик некорректного ввода и обработчик
+# при нахождении нескольких станций в БД
+    try:
+        trains = YaAPI.send_request((d[0][0], a[0][0]))['segments']
+    except IndexError:
+        bot.send_message(
+            message.chat.id, 'Введите корректное название станций')
+        r.reset_info(message.chat.id)
+        return
+    except KeyError:
+        bot.send_message(
+            message.chat.id,
+            'Извините, для этой станции расписание пока недоступно')
+        r.reset_info(message.chat.id)
+        return
+
+    tzone = pytz.timezone('Europe/Moscow')
+    t_now = parser.get_current_time(tzone)
+    print(t_now)
+    counter = config.HOW_MUCH
+    for train in trains:  # пропускаем только неушедшие рейсы
+        delta = dateutil.parser.parse(
+            train['departure']).astimezone(tzone) - t_now
+        if delta.days >= 0 and counter:  # по дефолту вывод 5 рейсов
+            counter -= 1
+            msg_dict = parser.info_about_train(train, t_now, delta)
+            bot.send_message(
+                message.chat.id, parser.message_template(msg_dict),
+                parse_mode='markdown')
 
 
 
