@@ -51,11 +51,3 @@ class StationInfo:
                 if self.db[r][s].lower() == data['arrival'].lower():
                     arrival.append((s, r))
         return departure, arrival
-
-
-
-
-
-    def search_engine():
-        '''С помощью модуля ищем расстояние Левенштейна'''
-        pass

@@ -2,7 +2,6 @@ import telebot
 from telebot import types
 
 import pytz
-# import datetime as dt
 import dateutil.parser
 
 from little_db import UserState
@@ -34,7 +33,6 @@ def help_message(message):
 
 @bot.message_handler(commands=['cancel'])
 def cancel_search(message):
-    print(r.get_info(message.chat.id))
     r.reset_info(message.chat.id)
     bot.send_message(message.chat.id, 'Вы отменили выбор станции.',
                      reply_markup=remove_markup)
@@ -54,7 +52,6 @@ def get_departure(message):
 def get_arrival(message):
     r.append_info(message.chat.id, 'departure', message.text)
     bot.send_message(message.chat.id, 'Введите станцию прибытия')
-    print(r.get_info(message.chat.id))
 
 
 @bot.message_handler(func=lambda message:
@@ -62,7 +59,6 @@ def get_arrival(message):
 def get_date(message):
     r.append_info(message.chat.id, 'arrival', message.text)
     bot.send_message(message.chat.id, 'Выберете дату', reply_markup=markup)
-    print(r.get_info(message.chat.id))
 
 
 @bot.message_handler(func=lambda message:
@@ -73,13 +69,7 @@ def return_result(message):
     r.append_info(message.chat.id, 'date', message.text)
 
     data = r.get_info(message.chat.id)
-    print(data)
     d, a = s.get_info_with_db(data)  # отправление и прибытие с регионом
-    print(d, a, sep='\n\n')
-    if len(d) > 1:
-        print('search_engine d!')  # кастом клава, если станций несколько
-    if len(a) > 1:
-        print('search_engine a!')
     tzone = pytz.timezone('Europe/Moscow')  # брать tz из настроек юзера
     t_now = parser.get_current_time(tzone)
 
@@ -111,11 +101,6 @@ def return_result(message):
             bot.send_message(
                 message.chat.id, parser.message_template(msg_dict),
                 parse_mode='markdown')
-
-
-
-
-
     r.reset_info(message.chat.id)  # Сброс состояния
 
 

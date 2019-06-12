@@ -3,9 +3,6 @@ import requests
 
 
 class YaAPI:
-    def __init__(self, token):
-        pass
-
     def send_request(data, time):
         '''Посылаем яндексу запрос с нужными станциями и датой'''
         time = time.strftime('%Y-%m-%d')
