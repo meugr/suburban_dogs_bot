@@ -1,5 +1,3 @@
-import config
-
 import pytz
 import datetime as dt
 import dateutil.parser
@@ -12,7 +10,7 @@ def get_current_time(user_tz):
 def hourse_minutes(delta):
     departure_in = delta.seconds // 60
     if departure_in > 59:
-        departure_in = '{} часа {}'.format(
+        departure_in = '{} ч. {}'.format(
             departure_in // 60,
             departure_in % 60)
     return departure_in
@@ -42,11 +40,11 @@ def info_about_train(train, t_now, delta):
 
 def message_template(data):
     msg = '''
-*Через {departure_in}минут*
+*Через {departure_in} мин.*
 {is_express} {thread}
 Отправление {departure}
 Прибытие {arrival}
-В пути {in_way} минут
+В пути {in_way} мин.
 Остановки - {stops}
 Цена билета {price} руб'''.format(**data)
     return msg
