@@ -80,11 +80,14 @@ def return_result(message):
         print('search_engine d!')  # кастом клава, если станций несколько
     if len(a) > 1:
         print('search_engine a!')
+    tzone = pytz.timezone('Europe/Moscow')  # брать tz из настроек юзера
+    t_now = parser.get_current_time(tzone)
 
 # Временная мера, написать обработчик некорректного ввода и обработчик
 # при нахождении нескольких станций в БД
     try:
-        trains = YaAPI.send_request((d[0][0], a[0][0]))['segments']
+        # Получаю инфу о рейсах
+        trains = YaAPI.send_request((d[0][0], a[0][0]), t_now)['segments']
     except IndexError:
         bot.send_message(
             message.chat.id, 'Введите корректное название станций')
@@ -93,13 +96,11 @@ def return_result(message):
     except KeyError:
         bot.send_message(
             message.chat.id,
-            'Извините, для этой станции расписание пока недоступно')
+            '''Извините, для этой станции расписание пока недоступно.
+Попробуйте ввести ТОЧНОЕ название станций.''')
         r.reset_info(message.chat.id)
         return
 
-    tzone = pytz.timezone('Europe/Moscow')
-    t_now = parser.get_current_time(tzone)
-    print(t_now)
     counter = config.HOW_MUCH
     for train in trains:  # пропускаем только неушедшие рейсы
         delta = dateutil.parser.parse(
