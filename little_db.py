@@ -43,12 +43,12 @@ class StationInfo:
         departure = []
         arrival = []
         for r in self.db:
-            for s in self.db[r]:
-                if self.db[r][s].lower() == data['departure'].lower():
+            for s in self.db[r]:  # поменял на in
+                if self.db[r][s].lower() in data['departure'].lower():
                     departure.append((s, r))
         for r in self.db:
             for s in self.db[r]:
-                if self.db[r][s].lower() == data['arrival'].lower():
+                if self.db[r][s].lower() in data['arrival'].lower():
                     arrival.append((s, r))
         return departure, arrival
 
