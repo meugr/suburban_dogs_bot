@@ -74,7 +74,7 @@ def return_result(message):
 
     data = r.get_info(message.chat.id)
     print(data)
-    d, a = s.get_info_with_db(data)  # отправление и прибытие с регионом
+    d, a = s.get_info_with_db(data)  # отправление и прибытие с регионом и нитью
     print(d, a, sep='\n\n')
     if len(d) > 1:
         print('search_engine d!')  # кастом клава, если станций несколько
