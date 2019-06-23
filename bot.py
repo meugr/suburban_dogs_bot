@@ -85,27 +85,20 @@ def return_result(message):
 
     data = r.get_info(message.chat.id)
     print(data)
-    d, a = s.get_info_with_db(data)  # отправление и прибытие с регионом и нитью
-
-
-
-
-    # print(d, a, sep='\n\n')
-    # if len(d) > 1:
-    #     print('search_engine d!')  # кастом клава, если станций несколько
-    # if len(a) > 1:
-    #     print('search_engine a!')
-    tzone = pytz.timezone('Europe/Moscow')  # брать tz из настроек юзера
-    t_now = parser.get_current_time(tzone)
+    try:
+        # отправление и прибытие с регионом и нитью
+        d, a = s.get_info_with_db(data)
+        tzone = pytz.timezone('Europe/Moscow')  # брать tz из настроек юзера
+        t_now = parser.get_current_time(tzone)
 
 # Временная мера, написать обработчик некорректного ввода и обработчик
 # при нахождении нескольких станций в БД
-    try:
         # Получаю инфу о рейсах
-        trains = YaAPI.send_request((d[0], a[0]), t_now)['segments']
+        trains = YaAPI.send_request(
+            (d[0], a[0]), data['date'], t_now)['segments']
         print(0)
 
-    except IndexError:
+    except (IndexError, TypeError):
         bot.send_message(
             message.chat.id, 'Введите корректное название станций',
             reply_markup=kbd_start)
@@ -118,7 +111,6 @@ def return_result(message):
 Попробуйте ввести ТОЧНОЕ название станций.''', reply_markup=kbd_start)
         r.reset_info(message.chat.id)
         return
-
     counter = config.HOW_MUCH
     for train in trains:  # пропускаем только неушедшие рейсы
         delta = dateutil.parser.parse(
@@ -129,6 +121,9 @@ def return_result(message):
             bot.send_message(
                 message.chat.id, parser.message_template(msg_dict),
                 parse_mode='markdown', reply_markup=kbd_start)
+        if counter == config.HOW_MUCH:  # счетчик сообщений не понменялся
+            bot.send_message(
+                message.chat.id, 'На сегодня электричек нет', reply_markup=kbd_start)
 
 
 
