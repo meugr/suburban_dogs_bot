@@ -3,14 +3,18 @@ import redis
 import json
 
 
-class UserState():
+class UserData:
+    """Класс для работы с пользовательскими данными из redis"""
+    def __init__(self):
+        self.conn = redis.Redis(db=1, charset='utf-8', decode_responses=True)
+    def new_user():
+        pass
+
+
+class UserState(UserData):
     '''
     Функции для работы с redis и управлением состоянием пользователя (FSM)
     '''
-
-    def __init__(self):
-        self.conn = redis.Redis(db=1, charset='utf-8', decode_responses=True)
-
     def start_search(self, chat_id):
         '''Создает в redis запись, тем самым начиная опрос юзера'''
         self.conn.delete(chat_id)
@@ -27,6 +31,14 @@ class UserState():
     def get_info(self, chat_id):
         '''Получаем весь юзерввод из redis'''
         return self.conn.hgetall(chat_id)
+
+
+class UserSettings():
+    pass
+
+
+class UserHistory():
+    pass
 
 
 class StationInfo:

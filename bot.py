@@ -72,7 +72,7 @@ def get_arrival(message):
 def get_date(message):
     r.append_info(message.chat.id, 'arrival', message.text)
     bot.send_message(
-        message.chat.id, 'Выберете дату', reply_markup=kbd_choose_date)
+        message.chat.id, 'Выберите дату', reply_markup=kbd_choose_date)
     print(r.get_info(message.chat.id))
 
 
