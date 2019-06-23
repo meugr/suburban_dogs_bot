@@ -43,16 +43,21 @@ class StationInfo:
         departure = []
         arrival = []
         for r in self.db:
-            for c in self.db[r]:
-                if self.db[r][c]['name'].lower() in data['departure'].lower():
-                    departure.append((c, r, self.db[r][c]['threads']))
+            for s in self.db[r]:
+                if self.db[r][s]['name'].lower() in data['departure'].lower():
+                    departure.append((s, r, self.db[r][s]['threads']))
         for r in self.db:
             for s in self.db[r]:
-                if self.db[r][c]['name'].lower() in data['arrival'].lower():
-                    arrival.append((c, r, self.db[r][c]['threads']))
+                if self.db[r][s]['name'].lower() in data['arrival'].lower():
+                    arrival.append((s, r, self.db[r][s]['threads']))
         # ДОБАВИТЬ ТУТ СТАВНЕНИЕ СТАНЦИЙ ПО НИТКАМ, ВЕРНУТЬ ТОЛЬКО 
         # СТАНЦИИ ГДЕ ПЕРЕСЕКАЕТСЯ ХОТЯ БЫ 1 НИТКА
-        return departure, arrival
+        # set(a) & set(b)
+        for d in departure:
+            for a in arrival:
+                if len(set(d[2]) & set(a[2])):
+                    return departure[0][:-1], arrival[0][:-1]
+
 
 
 

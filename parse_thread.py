@@ -35,6 +35,7 @@ def update_db():
 
 
 def create_db():
+    count = 400
     try:
         with open('stations_db.json') as f:
             db = json.load(f)
@@ -42,11 +43,15 @@ def create_db():
         for reg in db:
             res[reg] = {}
             for key in db[reg]:
-                res[reg][key] = {'name': db[reg][key], 'threads': []}
-                print(key)
-                res[reg][key]['threads'].extend(threads(key))
-                print(res[reg][key]['threads'])
-                print('++++++++++++++++')
+                if key not in res[reg]:
+                    if count <= 0:
+                        return
+                    count -= 1
+                    res[reg][key] = {'name': db[reg][key], 'threads': []}
+                    print(key)
+                    res[reg][key]['threads'].extend(threads(key))
+                    print(res[reg][key]['threads'])
+                    print('++++++++++++++++')
 
     finally:
         with open('stations_db_new.json', 'w') as f:
