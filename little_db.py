@@ -47,6 +47,7 @@ class StationInfo:
         res_a = set()
         for r in self.db:
             for s in self.db[r]:
+
                 if (data['departure'].lower() in self.db[r][s]['name'].lower()
                     and self.db[r][s]['threads'] != [None]):
                     departure.append((s, r, self.db[r][s]['threads']))

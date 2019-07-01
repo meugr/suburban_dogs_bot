@@ -4,6 +4,7 @@ import datetime as dt
 
 
 class YaAPI:
+
     def __init__(self, token):
         pass
 

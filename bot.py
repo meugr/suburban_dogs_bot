@@ -2,6 +2,7 @@ import telebot
 from telebot import types
 
 import pytz
+
 import datetime as dt
 import dateutil.parser
 
@@ -111,12 +112,14 @@ def return_result(message):
     bot.send_message(
         message.chat.id, 'Загружаю расписание...', reply_markup=remove_markup)
 
+
     data = db.get_branch(message.chat.id, 'search')
     try:
         # отправление и прибытие с регионом и нитью
         d, a = s.get_info_with_db(data)
         tzone = pytz.timezone('Europe/Moscow')  # брать tz из настроек юзера
         t_now = parser.get_current_time(tzone)
+
 
 # Временная мера, написать обработчик некорректного ввода и обработчик
 # при нахождении нескольких станций в БД
