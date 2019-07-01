@@ -20,10 +20,10 @@ def info_about_train(train, t_now, delta):
     '''Принимаем словарь c конкретным рейсом и текущее время юзера'''
     res = {}
     res['thread'] = train['thread']['title']
-    if train['thread']['express_type']:
-        res['is_express'] = chr(128648)
+    if train['thread']['express_type']:  # выбор смайлика типа поезда
+        res['is_express'] = '\U0001F688'
     else:
-        res['is_express'] = chr(128642)
+        res['is_express'] = '\U0001F682'
 
     res['departure'] = dateutil.parser.parse(train['departure']).strftime(
         '%H:%M')
