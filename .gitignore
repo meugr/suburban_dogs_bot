@@ -106,3 +106,4 @@ venv.bak/
 # config file
 config.py
 unused/
+stations_db_new.json

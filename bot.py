@@ -2,8 +2,6 @@ import telebot
 from telebot import types
 
 import pytz
-
-import datetime as dt
 import dateutil.parser
 
 from little_db import UserData
