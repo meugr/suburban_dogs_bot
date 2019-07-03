@@ -106,3 +106,5 @@ venv.bak/
 # config file
 config.py
 unused/
+# databases
+*.json
