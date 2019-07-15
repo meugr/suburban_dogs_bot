@@ -21,6 +21,7 @@ class UserData:
             'history': ()})
 
     def get_branch(self, chat_id, branch):
+        """Получаем ветку из БД юзеров"""
         return self.db.find_one({'id': chat_id})[branch]
 
     def set_branch(self, chat_id, branch, changes):
@@ -30,13 +31,12 @@ class UserData:
             {'$set': {branch: changes}})
 
     def update_last_five(self, chat_id, trains):
+        """Обновляет список последних 5 запросов юзера"""
         last = self.get_branch(chat_id, 'history')
         last = deque(last, maxlen=5)
         if list(trains) not in last:
             last.appendleft(trains)
             self.set_branch(chat_id, 'history', tuple(last))
-
-
 
 
 class StationInfo:
@@ -83,7 +83,6 @@ class StationInfo:
             if tmp:
                 arrival = tmp
         return f'{departure} — {arrival}', departure_id, arrival_id
-
 
     def search_engine():
         '''С помощью модуля ищем расстояние Левенштейна'''
