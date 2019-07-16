@@ -72,7 +72,8 @@ class StationInfo:
         return list(res_d), list(res_a)
 
     def get_stations_name(self, departure_id, arrival_id):
-        """Возвращает строку станция отправления — станция прибытия"""
+        """Возвращает строку станция отправления — станция прибытия и 
+        коды станции отправления и прибытия"""
         departure = ''
         arrival = ''
         for r in self.db:

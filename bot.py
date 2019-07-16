@@ -1,13 +1,9 @@
 import telebot
 from telebot import types
 
-import pytz
-import dateutil.parser
-
 from little_db import UserData
 from little_db import StationInfo
-from ya_api import YaAPI
-import parser
+from machine_parts import SearchEngine
 import config
 
 
@@ -44,14 +40,14 @@ def start_message(message):
 def last_five(message):
     db.set_branch(message.chat.id, 'state', 'history')
     last = db.get_branch(message.chat.id, 'history')
-    kbd_test = types.InlineKeyboardMarkup()
+    kbd_last_five = types.InlineKeyboardMarkup()
     for b in last:
-        kbd_test.add(types.InlineKeyboardButton(text=str(b[0]),
+        kbd_last_five.add(types.InlineKeyboardButton(text=str(b[0]),
                                                 callback_data=' '.join(b[1:])))
     bot.send_message(message.chat.id, 'Открываем архивы...',
         reply_markup=kbd_cancel)
     bot.send_message(
-        message.chat.id, 'Выберите недавний маршрут или нажмите отмена', reply_markup=kbd_test)
+        message.chat.id, 'Выберите недавний маршрут или нажмите отмена', reply_markup=kbd_last_five)
 
 
 
@@ -62,6 +58,19 @@ def repeat(message):
     bot.send_message(message.message.chat.id, message.data,
         reply_markup=kbd_start)
     db.set_branch(message.message.chat.id, 'state', 'home')
+
+
+@bot.callback_query_handler(func=lambda message:
+                            db.get_branch(message.message.chat.id, 'state') ==
+                            'search')
+def set_chosen_station(message):
+    update_branch = db.get_branch(message.message.chat.id, 'search')
+    if message.data[0] == 'd':
+        update_branch['codes_found'][0] = [message.data[1:]]
+    elif message.data[0] == 'a':
+        update_branch['codes_found'][1] = [message.data[1:]]
+    db.set_branch(message.message.chat.id, 'search', update_branch)
+
 
 
 
@@ -87,9 +96,7 @@ def help_message(message):
                      message.text == '\U0001F519 Отмена' or
                      message.text == '/cancel')
 def cancel_search(message):
-    print(db.get_branch(message.chat.id, 'search'))
-    db.set_branch(message.chat.id, 'search', {})
-    db.set_branch(message.chat.id, 'state', 'home')
+    SearchEngine.cancel_search(message, db)
     bot.send_message(message.chat.id, 'Выбор станции отменен',
                      reply_markup=kbd_start)
 
@@ -127,58 +134,53 @@ def search(message):
     elif len(db.get_branch(message.chat.id, 'search')) == 2:
         update_search = db.get_branch(message.chat.id, 'search')
         update_search['date'] = message.text
-        db.set_branch(message.chat.id, 'search', update_search)
-        bot.send_message(
-            message.chat.id, 'Загружаю расписание...',
-            reply_markup=remove_markup)
-
-        data = db.get_branch(message.chat.id, 'search')
-        try:
-            # отправление и прибытие с регионом и нитью
-            d, a = s.get_info_with_db(data)
-            tzone = pytz.timezone('Europe/Moscow')  # брать tz из настроек
-            t_now = parser.get_current_time(tzone)  # юзера
-    # Временная мера, написать обработчик некорректного ввода и обработчик
-    # при нахождении нескольких станций в БД
-            # Получаю инфу о рейсах
-            trains = YaAPI.send_request(
-                (d[0], a[0]), data['date'], t_now)['segments']
-
-        except (IndexError, TypeError):
+        # отправление и прибытие с регионом и нитью
+        d, a = s.get_info_with_db(update_search)
+        if d == [] or a == []:
             bot.send_message(
                 message.chat.id, 'Введите корректное название станций',
                 reply_markup=kbd_start)
-            cancel_search(message)
+            SearchEngine.cancel_search(message, db)
             return
-        except KeyError:
+        update_search['codes_found'] = (d, a)
+        db.set_branch(message.chat.id, 'search', update_search)
+
+    if len(db.get_branch(message.chat.id, 'search')) == 4:
+        d, a = db.get_branch(message.chat.id, 'search')['codes_found']
+
+
+
+        if len(d) > 1:
+            print('###DEBUG### bot.py НЕСКОЛЬКО СТАНЦИЙ d')
+            kbd_d_list = types.InlineKeyboardMarkup()
+            for code in d:
+                kbd_d_list.add(types.InlineKeyboardButton(text=str(code),
+                                  callback_data='d' + code))
             bot.send_message(
-                message.chat.id,
-                '''Извините, для этой станции расписание пока недоступно.
-Попробуйте ввести ТОЧНОЕ название станций.''', reply_markup=kbd_start)
-            cancel_search(message)
+                message.chat.id, 'Уточните станцию отправления',
+                reply_markup=kbd_d_list)
+
             return
-        counter = config.HOW_MUCH
-        for train in trains:  # пропускаем только неушедшие рейсы
-            delta = dateutil.parser.parse(
-                train['departure']).astimezone(tzone) - t_now
-            if delta.days >= 0 and counter:  # по дефолту вывод 5 рейсов
-                counter -= 1
-                msg_dict = parser.info_about_train(train, t_now, delta)
-                bot.send_message(
-                    message.chat.id, parser.message_template(msg_dict),
-                    parse_mode='markdown', reply_markup=kbd_start)
-        if counter == config.HOW_MUCH:  # счетчик сообщений не поменялся
-            bot.send_message(
-                message.chat.id, 'На сегодня электричек нет',
-                reply_markup=kbd_start)
+        if len(a) > 1:
+            print('###DEBUG### bot.py НЕСКОЛЬКО СТАНЦИЙ a')
+            return
+
+        bot.send_message(
+            message.chat.id, 'Загружаю расписание...',
+            reply_markup=remove_markup)
+        date = db.get_branch(message.chat.id, 'search')['date']
+        search_result = SearchEngine.search(
+            message, db, d, a, date, bot, kbd_start)
 
         # Сброс состояния
         db.set_branch(message.chat.id, 'search', {})
         db.set_branch(message.chat.id, 'state', 'home')
         # обновление 5 последних запросов
         print()
-        last_response = s.get_stations_name(d[0], a[0])
-        db.update_last_five(message.chat.id, last_response)
+        if search_result:
+            d, a = search_result  # инфа об отправлении и прибытии
+            last_response = s.get_stations_name(d, a)
+            db.update_last_five(message.chat.id, last_response)
 
 
 if __name__ == '__main__':
