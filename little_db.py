@@ -1,5 +1,6 @@
 import pymongo
 import json
+from collections import deque
 
 
 class UserData:
@@ -20,6 +21,7 @@ class UserData:
             'history': ()})
 
     def get_branch(self, chat_id, branch):
+        """Получаем ветку из БД юзеров"""
         return self.db.find_one({'id': chat_id})[branch]
 
     def set_branch(self, chat_id, branch, changes):
@@ -27,6 +29,14 @@ class UserData:
         self.db.update_one(
             {'id': chat_id},
             {'$set': {branch: changes}})
+
+    def update_last_five(self, chat_id, trains):
+        """Обновляет список последних 5 запросов юзера"""
+        last = self.get_branch(chat_id, 'history')
+        last = deque(last, maxlen=5)
+        if list(trains) not in last:
+            last.appendleft(trains)
+            self.set_branch(chat_id, 'history', tuple(last))
 
 
 class StationInfo:
@@ -47,7 +57,6 @@ class StationInfo:
         res_a = set()
         for r in self.db:
             for s in self.db[r]:
-
                 if (data['departure'].lower() in self.db[r][s]['name'].lower()
                     and self.db[r][s]['threads'] != [None]):
                     departure.append((s, r, self.db[r][s]['threads']))
@@ -61,6 +70,20 @@ class StationInfo:
                     res_d.add(d[0])
                     res_a.add(a[0])
         return list(res_d), list(res_a)
+
+    def get_stations_name(self, departure_id, arrival_id):
+        """Возвращает строку станция отправления — станция прибытия и 
+        коды станции отправления и прибытия"""
+        departure = ''
+        arrival = ''
+        for r in self.db:
+            tmp = self.db[r].get(departure_id, {}).get('name')
+            if tmp:
+                departure = tmp
+            tmp = self.db[r].get(arrival_id, {}).get('name')
+            if tmp:
+                arrival = tmp
+        return f'{departure} — {arrival}', departure_id, arrival_id
 
     def search_engine():
         '''С помощью модуля ищем расстояние Левенштейна'''
