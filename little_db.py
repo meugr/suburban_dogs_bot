@@ -12,13 +12,14 @@ class UserData:
         self.db = pymongo.MongoClient().suburban_dogs.user_data
 
     def create_new_user(self, chat_id):
-        """Создаем нового юзера в mongoDB"""
-        self.db.insert_one({
-            'id': chat_id,
-            'state': 'home',  # (home, search, settings, history)
-            'search': {},
-            'settings': {},
-            'history': ()})
+        """Создаем нового юзера в mongoDB, если его еще нет"""
+        if not self.db.find_one({'id': chat_id}):
+            self.db.insert_one({
+                'id': chat_id,
+                'state': 'home',  # (home, search, settings, history)
+                'search': {},
+                'settings': {},
+                'history': ()})
 
     def get_branch(self, chat_id, branch):
         """Получаем ветку из БД юзеров"""
