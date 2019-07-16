@@ -5,8 +5,6 @@ from ya_api import YaAPI
 import config
 
 
-
-
 class Parser:
     def get_current_time(user_tz):
         return pytz.utc.localize(dt.datetime.utcnow()).astimezone(user_tz)
@@ -53,7 +51,7 @@ class Parser:
         return msg
 
 
-class SearchEngine:
+class Engine:
     def cancel_search(message, db):
         """Отмена ввода и возврат состояния на домашний экран"""
         print(db.get_branch(message.chat.id, 'search'))
@@ -73,13 +71,13 @@ class SearchEngine:
             # Добавить интерфейс выбора конкретной станции из d, a
         try:
             trains = YaAPI.send_request(
-                (d[0], a[0]), date, t_now)['segments']
+                (d, a), date, t_now)['segments']
         except KeyError:
             bot.send_message(
                 message.chat.id,
                 '''Извините, для этой станции расписание пока недоступно.
 Попробуйте ввести ТОЧНОЕ название станций.''', reply_markup=kbd_start)
-            SearchEngine.cancel_search(message, db)
+            Engine.cancel_search(message, db)
             return
         counter = config.HOW_MUCH
         for train in trains:  # пропускаем только неушедшие рейсы
@@ -96,4 +94,4 @@ class SearchEngine:
                 message.chat.id, 'На сегодня электричек нет',
                 reply_markup=kbd_start)
         print('###DEBUG### parser.py', d, a, sep='\n')
-        return d[0], a[0]
+        return d, a

@@ -3,7 +3,7 @@ from telebot import types
 
 from little_db import UserData
 from little_db import StationInfo
-from machine_parts import SearchEngine
+from machine_parts import Engine
 import config
 
 
@@ -27,12 +27,29 @@ def on_development_stage(message):
     bot.send_message(message.chat.id, 'Раздел в процессе разработки')
 
 
+def choise_one_station(message, stations, point):
+    """Выбор юзером одной станции из списка"""
+    print(f'###DEBUG### bot.py НЕСКОЛЬКО СТАНЦИЙ {point}')
+    word_point = 'отправления' if point == 'd' else 'прибытия'
+    kbd_list_sts = types.InlineKeyboardMarkup()
+    for code in stations:
+        for r in s.db:
+            name = s.db[r].get(code, {}).get('name', None)
+            if name:
+                break
+        kbd_list_sts.add(
+            types.InlineKeyboardButton(text=str(name),
+                                       callback_data=point + code))
+    bot.send_message(
+        message.chat.id, f'Уточните станцию {word_point}',
+        reply_markup=kbd_list_sts)
+
+
 @bot.message_handler(commands=['start'])
 def start_message(message):
     db.create_new_user(message.chat.id)
     bot.send_message(
         message.chat.id, 'Добро пожаловать.', reply_markup=kbd_start)
-
 
 
 @bot.message_handler(func=lambda message:
@@ -42,21 +59,24 @@ def last_five(message):
     last = db.get_branch(message.chat.id, 'history')
     kbd_last_five = types.InlineKeyboardMarkup()
     for b in last:
-        kbd_last_five.add(types.InlineKeyboardButton(text=str(b[0]),
-                                                callback_data=' '.join(b[1:])))
+        kbd_last_five.add(
+            types.InlineKeyboardButton(text=str(b[0]),
+                                       callback_data=' '.join(b[1:])))
     bot.send_message(message.chat.id, 'Открываем архивы...',
-        reply_markup=kbd_cancel)
+                     reply_markup=kbd_cancel)
     bot.send_message(
-        message.chat.id, 'Выберите недавний маршрут или нажмите отмена', reply_markup=kbd_last_five)
-
+        message.chat.id, 'Выберите недавний маршрут или нажмите отмена',
+        reply_markup=kbd_last_five)
 
 
 @bot.callback_query_handler(func=lambda message:
                             db.get_branch(message.message.chat.id, 'state') ==
                             'history')
 def repeat(message):
-    bot.send_message(message.message.chat.id, message.data,
-        reply_markup=kbd_start)
+    print('###DEBUG### bot.py', message.data)
+    d, a = message.data.split()
+    date = 'Сегодня'
+    Engine.search(message.message, db, d, a, date, bot, kbd_start)
     db.set_branch(message.message.chat.id, 'state', 'home')
 
 
@@ -70,10 +90,7 @@ def set_chosen_station(message):
     elif message.data[0] == 'a':
         update_branch['codes_found'][1] = [message.data[1:]]
     db.set_branch(message.message.chat.id, 'search', update_branch)
-
-
-
-
+    search(message.message)
 
 
 @bot.message_handler(func=lambda message:
@@ -96,7 +113,7 @@ def help_message(message):
                      message.text == '\U0001F519 Отмена' or
                      message.text == '/cancel')
 def cancel_search(message):
-    SearchEngine.cancel_search(message, db)
+    Engine.cancel_search(message, db)
     bot.send_message(message.chat.id, 'Выбор станции отменен',
                      reply_markup=kbd_start)
 
@@ -140,7 +157,7 @@ def search(message):
             bot.send_message(
                 message.chat.id, 'Введите корректное название станций',
                 reply_markup=kbd_start)
-            SearchEngine.cancel_search(message, db)
+            Engine.cancel_search(message, db)
             return
         update_search['codes_found'] = (d, a)
         db.set_branch(message.chat.id, 'search', update_search)
@@ -148,29 +165,20 @@ def search(message):
     if len(db.get_branch(message.chat.id, 'search')) == 4:
         d, a = db.get_branch(message.chat.id, 'search')['codes_found']
 
-
-
         if len(d) > 1:
-            print('###DEBUG### bot.py НЕСКОЛЬКО СТАНЦИЙ d')
-            kbd_d_list = types.InlineKeyboardMarkup()
-            for code in d:
-                kbd_d_list.add(types.InlineKeyboardButton(text=str(code),
-                                  callback_data='d' + code))
-            bot.send_message(
-                message.chat.id, 'Уточните станцию отправления',
-                reply_markup=kbd_d_list)
-
+            choise_one_station(message, d, point='d')
             return
-        if len(a) > 1:
-            print('###DEBUG### bot.py НЕСКОЛЬКО СТАНЦИЙ a')
+
+        elif len(a) > 1:
+            choise_one_station(message, a, point='a')
             return
 
         bot.send_message(
             message.chat.id, 'Загружаю расписание...',
             reply_markup=remove_markup)
         date = db.get_branch(message.chat.id, 'search')['date']
-        search_result = SearchEngine.search(
-            message, db, d, a, date, bot, kbd_start)
+        search_result = Engine.search(
+            message, db, d[0], a[0], date, bot, kbd_start)
 
         # Сброс состояния
         db.set_branch(message.chat.id, 'search', {})
