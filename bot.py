@@ -72,7 +72,7 @@ def last_five(message):
 @bot.callback_query_handler(func=lambda message:
                             db.get_branch(message.message.chat.id, 'state') ==
                             'history')
-def repeat(message):
+def search_from_last(message):
     print('###DEBUG### bot.py', message.data)
     d, a = message.data.split()
     date = 'Сегодня'

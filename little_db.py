@@ -22,7 +22,10 @@ class UserData:
 
     def get_branch(self, chat_id, branch):
         """Получаем ветку из БД юзеров"""
-        return self.db.find_one({'id': chat_id})[branch]
+        get = self.db.find_one({'id': chat_id})
+        if get:
+            return get[branch]
+        self.create_new_user(chat_id)
 
     def set_branch(self, chat_id, branch, changes):
         """Отправляет изменения ветки в mongoDB"""
