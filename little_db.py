@@ -1,6 +1,9 @@
 import pymongo
 import json
 from collections import deque
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class UserData:
@@ -20,27 +23,43 @@ class UserData:
                 'search': {},
                 'settings': {},
                 'history': ()})
+            logger.info(f'<id{chat_id}>: New user has been created')
 
     def get_branch(self, chat_id, branch):
         """Получаем ветку из БД юзеров"""
         get = self.db.find_one({'id': chat_id})
         if get:
+            logger.debug(f'<id{chat_id}>: User get "{branch}" branch')
             return get[branch]
+        logger.warning(f'<id{chat_id}>: User can\'t find in DB, but he\'s \
+not new user. Trying create his...')
         self.create_new_user(chat_id)
 
     def set_branch(self, chat_id, branch, changes):
         """Отправляет изменения ветки в mongoDB"""
-        self.db.update_one(
-            {'id': chat_id},
-            {'$set': {branch: changes}})
+        try:
+            logger.debug(f'<id{chat_id}>: Trying set changes "{changes}" in \
+branch "{branch}"...')
+            self.db.update_one(
+                {'id': chat_id},
+                {'$set': {branch: changes}})
+        except Exception:
+            logger.error('Changes isn\'t set', exc_info=True)
 
     def update_last_five(self, chat_id, trains):
         """Обновляет список последних 5 запросов юзера"""
+        logger.debug(f'<id{chat_id}>: Trying add "{trains}" in list "last 5 \
+searches"')
         last = self.get_branch(chat_id, 'history')
         last = deque(last, maxlen=5)
         if list(trains) not in last:
             last.appendleft(trains)
             self.set_branch(chat_id, 'history', tuple(last))
+            logger.debug(f'<id{chat_id}>: Trains has been added in "last 5 \
+searches"')
+            return
+        logger.debug(f'<id{chat_id}>: Trains hasn\'t been added in "last 5 \
+searches"')
 
 
 class StationInfo:
@@ -49,8 +68,12 @@ class StationInfo:
     """
 
     def __init__(self, path_to_db):
-        with open(path_to_db) as f:
-            self.db = json.load(f)
+        try:
+            with open(path_to_db) as f:
+                self.db = json.load(f)
+        except FileNotFoundError:
+            logger.critical('DB file not found!', exc_info=True)
+            raise
 
     def get_info_with_db(self, data):
         '''Возвращает списки подходящих станций отправления и прибытия
@@ -59,6 +82,7 @@ class StationInfo:
         arrival = []
         res_d = set()
         res_a = set()
+        logger.debug(f'Start get_info_with_db(). data="{data}"')
         for r in self.db:
             for s in self.db[r]:
                 if (data['departure'].lower() in self.db[r][s]['name'].lower()
@@ -67,11 +91,14 @@ class StationInfo:
                 if (data['arrival'].lower() in self.db[r][s]['name'].lower()
                     and self.db[r][s]['threads'] != [None]):
                     arrival.append((s, r, self.db[r][s]['threads']))
+        logger.debug(f'arrival = "{arrival}" departure = "{departure}"')
         for d in departure:
             for a in arrival:
                 if len(set(d[2]) & set(a[2])):  # если есть общие нитки
                     res_d.add(d[0])
                     res_a.add(a[0])
+                    logger.debug(f'Found stations with common threads: "{d}", \
+"{a}"')
         return list(res_d), list(res_a)
 
     def get_stations_name(self, departure_id, arrival_id):

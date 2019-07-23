@@ -1,11 +1,25 @@
 import telebot
 from telebot import types
 
+import logging
+import logging.config
+
 from little_db import UserData
 from little_db import StationInfo
 from machine_parts import Engine
 import config
 
+logger = logging.getLogger(__name__)
+# disable urllib3 debug logging
+logging.getLogger("urllib3").setLevel(logging.WARNING)
+if config.DEBUG_LOG:
+    logging.config.fileConfig('loggers_conf/debug_log.conf',
+                              disable_existing_loggers=False)
+else:
+    logging.config.fileConfig('loggers_conf/main_log.conf',
+                              disable_existing_loggers=False)
+
+logger.info('Bot has been started.')
 
 db = UserData()
 s = StationInfo(config.DB_PATH)
@@ -21,6 +35,7 @@ kbd_start.row('\U0001F551 5 последних запросов')
 kbd_start.row('\U0001F6E0 Настройки', '\U0001F198 Помощь')
 kbd_cancel = types.ReplyKeyboardMarkup(resize_keyboard=True)
 kbd_cancel.row('\U0001F519 Отмена')
+logger.debug('Custom keyboards initialized')
 
 
 def on_development_stage(message):
@@ -73,6 +88,8 @@ def last_five(message):
                             'history')
 def search_from_last(message):
     d, a = message.data.split()
+    logger.debug(f'<id{message.message.chat.id}>: User searched schedule from \
+"{d}" to "{a}" in "last 5 searches"')
     date = 'Сегодня'
     Engine.search(message.message, db, d, a, date, bot, kbd_start)
     db.set_branch(message.message.chat.id, 'state', 'home')
@@ -112,6 +129,7 @@ def help_message(message):
                      message.text == '/cancel')
 def cancel_search(message):
     Engine.cancel_search(message, db)
+    logger.debug(f'<id{message.chat.id}>: User cancel something')
     bot.send_message(message.chat.id, 'Выбор станции отменен',
                      reply_markup=kbd_start)
 
@@ -121,6 +139,7 @@ def cancel_search(message):
                      db.get_branch(message.chat.id, 'state') == 'home')
 def get_departure(message):
     db.set_branch(message.chat.id, 'state', 'search')
+    logger.debug(f'<id{message.chat.id}>: User started search of schedule')
     bot.send_message(message.chat.id,
                      'Введите станцию отправления\nДля отмены нажмите /cancel',
                      reply_markup=remove_markup)

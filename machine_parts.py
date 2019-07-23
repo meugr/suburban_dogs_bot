@@ -3,6 +3,9 @@ import datetime as dt
 import dateutil.parser
 from ya_api import YaAPI
 import config
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class Parser:
@@ -64,14 +67,19 @@ class Engine:
         kbd_start - клавиатура стартового экрана"""
         tzone = pytz.timezone('Europe/Moscow')  # брать tz из настроек
         t_now = Parser.get_current_time(tzone)  # юзера
+        logger.debug(f'<{message.chat.id}>: User time now "{t_now}"')
     # Временная мера, написать обработчик некорректного ввода и обработчик
     # при нахождении нескольких станций в БД
-            # Получаю инфу о рейсах
-            # Добавить интерфейс выбора конкретной станции из d, a
+        # Получаю инфу о рейсах
+        # Добавить интерфейс выбора конкретной станции из d, a
         try:
-            trains = YaAPI.send_request(
-                (d, a), date, t_now)['segments']
+            ya_data = YaAPI.send_request((d, a), date, t_now)
+            logger.debug(f'Get gata for stations "{d};{a}"\
+\n================\n{ya_data}\n================\n')
+            trains = ya_data['segments']
         except KeyError:
+            logger.exception(f'<{message.chat.id}>: Trains not found in \
+yandex requests data')
             bot.send_message(
                 message.chat.id,
                 '''Извините, для этой станции расписание пока недоступно.
