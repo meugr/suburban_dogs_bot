@@ -54,7 +54,6 @@ class Parser:
 class Engine:
     def cancel_search(message, db):
         """Отмена ввода и возврат состояния на домашний экран"""
-        print(db.get_branch(message.chat.id, 'search'))
         db.set_branch(message.chat.id, 'search', {})
         db.set_branch(message.chat.id, 'state', 'home')
 
@@ -93,5 +92,4 @@ class Engine:
             bot.send_message(
                 message.chat.id, 'На сегодня электричек нет',
                 reply_markup=kbd_start)
-        print('###DEBUG### parser.py', d, a, sep='\n')
         return d, a

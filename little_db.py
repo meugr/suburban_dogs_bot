@@ -67,7 +67,6 @@ class StationInfo:
                 if (data['arrival'].lower() in self.db[r][s]['name'].lower()
                     and self.db[r][s]['threads'] != [None]):
                     arrival.append((s, r, self.db[r][s]['threads']))
-        print(arrival, departure, sep='\n++++++\n')
         for d in departure:
             for a in arrival:
                 if len(set(d[2]) & set(a[2])):  # если есть общие нитки
@@ -76,7 +75,7 @@ class StationInfo:
         return list(res_d), list(res_a)
 
     def get_stations_name(self, departure_id, arrival_id):
-        """Возвращает строку станция отправления — станция прибытия и 
+        """Возвращает строку станция отправления — станция прибытия и
         коды станции отправления и прибытия"""
         departure = ''
         arrival = ''

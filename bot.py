@@ -29,7 +29,6 @@ def on_development_stage(message):
 
 def choise_one_station(message, stations, point):
     """Выбор юзером одной станции из списка"""
-    print(f'###DEBUG### bot.py НЕСКОЛЬКО СТАНЦИЙ {point}')
     word_point = 'отправления' if point == 'd' else 'прибытия'
     kbd_list_sts = types.InlineKeyboardMarkup()
     for code in stations:
@@ -73,7 +72,6 @@ def last_five(message):
                             db.get_branch(message.message.chat.id, 'state') ==
                             'history')
 def search_from_last(message):
-    print('###DEBUG### bot.py', message.data)
     d, a = message.data.split()
     date = 'Сегодня'
     Engine.search(message.message, db, d, a, date, bot, kbd_start)
@@ -138,7 +136,6 @@ def search(message):
         bot.send_message(message.chat.id,
                          'Введите станцию прибытия\nДля отмены нажмите \
 /cancel')
-        print(db.get_branch(message.chat.id, 'search'))
 
     elif len(db.get_branch(message.chat.id, 'search')) == 1:
         update_search = db.get_branch(message.chat.id, 'search')
@@ -146,7 +143,6 @@ def search(message):
         db.set_branch(message.chat.id, 'search', update_search)
         bot.send_message(
             message.chat.id, 'Выберите дату', reply_markup=kbd_choose_date)
-        print(db.get_branch(message.chat.id, 'search'))
 
     elif len(db.get_branch(message.chat.id, 'search')) == 2:
         update_search = db.get_branch(message.chat.id, 'search')
@@ -184,7 +180,6 @@ def search(message):
         db.set_branch(message.chat.id, 'search', {})
         db.set_branch(message.chat.id, 'state', 'home')
         # обновление 5 последних запросов
-        print()
         if search_result:
             d, a = search_result  # инфа об отправлении и прибытии
             last_response = s.get_stations_name(d, a)
